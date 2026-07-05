@@ -63,11 +63,25 @@ export default async function CertDetailPage({ params }: Props) {
   const categoryColor = CATEGORY_COLOR[cert.category] ?? "bg-gray-50 text-gray-600 ring-gray-100";
   const categoryLabel = CATEGORY_LABEL[cert.category] ?? cert.category;
 
-  // 접수 시작일이 가장 가까운 미래 회차
   const now = new Date();
-  const upcomingSession = cert.sessions
-    .filter((s) => s.applicationStartAt && s.applicationStartAt > now)
-    .sort((a, b) => a.applicationStartAt!.getTime() - b.applicationStartAt!.getTime())[0];
+
+  function nearestFuture<T extends { date: Date; round: number; label: string; url?: string | null }>(
+    events: T[]
+  ) {
+    return events.filter((e) => e.date > now).sort((a, b) => a.date.getTime() - b.date.getTime())[0] ?? null;
+  }
+
+  const fmt = (d: Date) => new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" }).format(d);
+
+  const upcomingEvents = [
+    nearestFuture(cert.sessions.filter((s) => s.applicationStartAt).map((s) => ({ date: s.applicationStartAt!, round: s.sessionRound, label: "접수 시작", url: s.applicationUrl }))),
+    nearestFuture(cert.sessions.filter((s) => s.applicationEndAt).map((s) => ({ date: s.applicationEndAt!, round: s.sessionRound, label: "접수 마감", url: s.applicationUrl }))),
+    nearestFuture(cert.sessions.filter((s) => s.examDateWritten).map((s) => ({ date: s.examDateWritten!, round: s.sessionRound, label: "필기 시험", url: null }))),
+    nearestFuture(cert.sessions.filter((s) => s.examDatePractical).map((s) => ({ date: s.examDatePractical!, round: s.sessionRound, label: "실기 시험", url: null }))),
+    nearestFuture(cert.sessions.filter((s) => s.resultAnnouncementAt).map((s) => ({ date: s.resultAnnouncementAt!, round: s.sessionRound, label: "합격 발표", url: null }))),
+  ].filter(Boolean) as { date: Date; round: number; label: string; url?: string | null }[];
+
+  const nearestApplicationUrl = upcomingEvents.find((e) => e.url)?.url ?? null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
@@ -179,26 +193,28 @@ export default async function CertDetailPage({ params }: Props) {
           </div>
 
           {/* 다가오는 일정 요약 */}
-          {upcomingSession && (
+          {upcomingEvents.length > 0 && (
             <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-500">
-                다가오는 접수
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-blue-500">
+                다가오는 일정
               </p>
-              <p className="font-semibold text-blue-900">
-                {upcomingSession.sessionYear}년 제{upcomingSession.sessionRound}회
-              </p>
-              {upcomingSession.applicationStartAt && (
-                <p className="mt-1 text-sm text-blue-700">
-                  접수 시작:{" "}
-                  {new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" }).format(upcomingSession.applicationStartAt)}
-                </p>
-              )}
-              {upcomingSession.applicationUrl && (
+              <ul className="space-y-2">
+                {upcomingEvents.map((e) => (
+                  <li key={e.label} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-blue-700 shrink-0">
+                      <span className="font-medium">{e.label}</span>
+                      <span className="ml-1 text-blue-400 text-xs">({e.round}회)</span>
+                    </span>
+                    <span className="text-blue-900 font-semibold tabular-nums">{fmt(e.date)}</span>
+                  </li>
+                ))}
+              </ul>
+              {nearestApplicationUrl && (
                 <a
-                  href={upcomingSession.applicationUrl}
+                  href={nearestApplicationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-3 flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
+                  className="mt-4 flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 transition"
                 >
                   원서 접수하기
                   <svg className="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
