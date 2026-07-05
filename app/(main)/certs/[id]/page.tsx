@@ -79,7 +79,8 @@ export default async function CertDetailPage({ params }: Props) {
     nearestFuture(cert.sessions.filter((s) => s.examDateWritten).map((s) => ({ date: s.examDateWritten!, round: s.sessionRound, label: "필기 시험", url: null }))),
     nearestFuture(cert.sessions.filter((s) => s.examDatePractical).map((s) => ({ date: s.examDatePractical!, round: s.sessionRound, label: "실기 시험", url: null }))),
     nearestFuture(cert.sessions.filter((s) => s.resultAnnouncementAt).map((s) => ({ date: s.resultAnnouncementAt!, round: s.sessionRound, label: "합격 발표", url: null }))),
-  ].filter(Boolean) as { date: Date; round: number; label: string; url?: string | null }[];
+  ].filter(Boolean)
+   .sort((a, b) => a!.date.getTime() - b!.date.getTime()) as { date: Date; round: number; label: string; url?: string | null }[];
 
   const nearestApplicationUrl = upcomingEvents.find((e) => e.url)?.url ?? null;
 

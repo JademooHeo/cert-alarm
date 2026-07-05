@@ -4,13 +4,14 @@ import { formatDate, daysUntil, cn } from "@/lib/utils";
 type Event = {
   label: string;
   date: Date | null;
+  endDate?: Date | null;
   sublabel?: string;
 };
 
 function getEvents(s: ExamSession): Event[] {
   return [
-    { label: "원서접수", date: s.applicationStartAt, sublabel: s.applicationEndAt ? `~ ${formatDate(s.applicationEndAt)}` : undefined },
-    ...(s.addlApplicationStartAt ? [{ label: "추가접수", date: s.addlApplicationStartAt, sublabel: s.addlApplicationEndAt ? `~ ${formatDate(s.addlApplicationEndAt)}` : undefined }] : []),
+    { label: "원서접수", date: s.applicationStartAt, endDate: s.applicationEndAt, sublabel: s.applicationEndAt ? `~ ${formatDate(s.applicationEndAt)}` : undefined },
+    ...(s.addlApplicationStartAt ? [{ label: "추가접수", date: s.addlApplicationStartAt, endDate: s.addlApplicationEndAt, sublabel: s.addlApplicationEndAt ? `~ ${formatDate(s.addlApplicationEndAt)}` : undefined }] : []),
     ...(s.examDateWritten ? [{ label: "필기시험", date: s.examDateWritten }] : []),
     ...(s.examDatePractical ? [{ label: "실기시험", date: s.examDatePractical }] : []),
     ...(s.examDateInterview ? [{ label: "면접", date: s.examDateInterview }] : []),
@@ -18,7 +19,17 @@ function getEvents(s: ExamSession): Event[] {
   ].filter((e) => e.date !== null);
 }
 
-function EventBadge({ date }: { date: Date }) {
+function EventBadge({ date, endDate }: { date: Date; endDate?: Date | null }) {
+  const now = Date.now();
+  // 접수 기간 중
+  if (endDate && date.getTime() < now && endDate.getTime() >= now) {
+    const days = daysUntil(endDate);
+    return (
+      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+        접수 중{days !== null && days >= 0 ? ` (마감 D-${days})` : ""}
+      </span>
+    );
+  }
   const days = daysUntil(date);
   if (days === null) return null;
   if (days < 0) return <span className="text-xs text-gray-400">완료</span>;
@@ -47,6 +58,8 @@ export default function SessionTimeline({ sessions }: Props) {
         const events = getEvents(session);
         const now = Date.now();
         const isPast = session.resultAnnouncementAt && session.resultAnnouncementAt.getTime() < now;
+        const isApplying = session.applicationStartAt && session.applicationEndAt &&
+          session.applicationStartAt.getTime() < now && session.applicationEndAt.getTime() >= now;
 
         return (
           <div
@@ -62,6 +75,9 @@ export default function SessionTimeline({ sessions }: Props) {
                 <span className="font-semibold text-gray-900">
                   {session.sessionYear}년 제{session.sessionRound}회
                 </span>
+                {isApplying && (
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">접수 중</span>
+                )}
                 {isPast && (
                   <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">종료</span>
                 )}
@@ -90,13 +106,15 @@ export default function SessionTimeline({ sessions }: Props) {
             <div className="px-5 py-4">
               <ol className="relative border-l border-gray-100 pl-6 space-y-4">
                 {events.map((event, i) => {
-                  const isPastEvent = event.date && event.date.getTime() < now;
+                  const inPeriod = event.date && event.endDate &&
+                    event.date.getTime() < now && event.endDate.getTime() >= now;
+                  const isPastEvent = !inPeriod && event.date && event.date.getTime() < now;
                   return (
                     <li key={i} className="relative">
                       <div
                         className={cn(
                           "absolute -left-[25px] top-1 size-3 rounded-full border-2 bg-white",
-                          isPastEvent ? "border-gray-300" : "border-blue-500"
+                          inPeriod ? "border-green-500" : isPastEvent ? "border-gray-300" : "border-blue-500"
                         )}
                       />
                       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
@@ -109,7 +127,7 @@ export default function SessionTimeline({ sessions }: Props) {
                             <span className="ml-1 text-xs text-gray-400">{event.sublabel}</span>
                           )}
                         </span>
-                        {!isPastEvent && event.date && <EventBadge date={event.date} />}
+                        {!isPastEvent && event.date && <EventBadge date={event.date} endDate={event.endDate} />}
                       </div>
                     </li>
                   );
