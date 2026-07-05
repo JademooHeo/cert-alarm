@@ -28,7 +28,19 @@
       "Bash(psql *)",
       "Bash(gh auth *)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(gh repo *)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_lvJLkR6muZF5@ep-holy-hat-aoxv6nkb-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npx prisma *)",
+      "Bash(DATABASE_URL=\"postgresql://neondb_owner:npg_lvJLkR6muZF5@ep-holy-hat-aoxv6nkb-pooler.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require\" npm run db:seed)",
+      "Bash(git push *)",
+      "mcp__claude_ai_Vercel__list_teams",
+      "mcp__claude_ai_Vercel__list_projects",
+      "mcp__claude_ai_Vercel__get_deployment",
+      "mcp__claude_ai_Vercel__get_runtime_errors",
+      "mcp__claude_ai_Vercel__get_deployment_build_logs",
+      "WebFetch(domain:cert-alarm.vercel.app)",
+      "mcp__claude_ai_Vercel__list_deployments"
     ]
   }
 }
