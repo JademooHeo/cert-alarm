@@ -63,10 +63,11 @@ export default async function CertDetailPage({ params }: Props) {
   const categoryColor = CATEGORY_COLOR[cert.category] ?? "bg-gray-50 text-gray-600 ring-gray-100";
   const categoryLabel = CATEGORY_LABEL[cert.category] ?? cert.category;
 
-  // 다음에 오는 접수 시작일 기반으로 가장 가까운 회차 찾기
-  const upcomingSession = cert.sessions.find(
-    (s) => s.applicationStartAt && s.applicationStartAt > new Date()
-  );
+  // 접수 시작일이 가장 가까운 미래 회차
+  const now = new Date();
+  const upcomingSession = cert.sessions
+    .filter((s) => s.applicationStartAt && s.applicationStartAt > now)
+    .sort((a, b) => a.applicationStartAt!.getTime() - b.applicationStartAt!.getTime())[0];
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
