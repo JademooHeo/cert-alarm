@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ────────────────────────────────────────────
+// 자격증 마스터
+// ────────────────────────────────────────────
+
+model Certification {
+  id               String       @id @default(cuid())
+  nameKo           String       // 자격증명 (한글)
+  nameEn           String?      // 자격증명 (영문)
+  category         CertCategory
+  subcategory      String?      // 세부 분야 (IT, 건축, 의료 …)
+  grade            String?      // 기술사 / 기사 / 산업기사 / 기능사 등
+  issuingAuthority String       // 시행기관 (Q-Net, 대한상공회의소 …)
+  baseLaw          String?      // 근거 법령
+  description      String?
+  officialUrl      String?      // 시행기관 공식 URL
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  sessions      ExamSession[]
+  subscriptions Subscription[]
+
+  @@index([nameKo])
+  @@index([category])
+  @@index([issuingAuthority])
+}
+
+enum CertCategory {
+  NATIONAL_TECHNICAL    // 국가기술자격
+  NATIONAL_PROFESSIONAL // 국가전문자격
+  PRIVATE_CERTIFIED     // 국가공인 민간자격
+}
+
+// ────────────────────────────────────────────
+// 시험 회차
+// ────────────────────────────────────────────
+
+model ExamSession {
+  id              String @id @default(cuid())
+  certificationId String
+  sessionYear     Int    // 2025
+  sessionRound    Int    // 1, 2, 3 …
+
+  // 접수 기간
+  applicationStartAt     DateTime?
+  applicationEndAt       DateTime?
+  addlApplicationStartAt DateTime? // 추가 접수 시작
+  addlApplicationEndAt   DateTime? // 추가 접수 마감
+
+  // 시험일
+  examDateWritten   DateTime? // 필기
+  examDatePractical DateTime? // 실기
+  examDateInterview DateTime? // 면접
+
+  resultAnnouncementAt DateTime? // 합격자 발표일
+
+  examFee      Int?    // 응시료 (원)
+  location     String? // 시험 장소
+  subjects     String? // 시험과목
+  passCriteria String? // 합격 기준
+
+  announcementUrl String? // 공고 원문 URL
+  applicationUrl  String? // 접수 URL
+
+  source    String?  // 데이터 출처
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  certification    Certification     @relation(fields: [certificationId], references: [id])
+  notificationLogs NotificationLog[]
+
+  @@unique([certificationId, sessionYear, sessionRound])
+  @@index([certificationId])
+  @@index([applicationStartAt])
+  @@index([examDateWritten])
+  @@index([resultAnnouncementAt])
+}
+
+// ────────────────────────────────────────────
+// 사용자
+// ────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String?
+  image          String?
+  emailVerified  DateTime?
+  socialProvider String?   // google | kakao | null(이메일 가입)
+  socialId       String?
+  timezone       String    @default("Asia/Seoul")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  subscriptions    Subscription[]
+  notificationLogs NotificationLog[]
+
+  @@index([email])
+}
+
+// NextAuth 어댑터 필수 모델
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ────────────────────────────────────────────
+// 구독 (즐겨찾기 + 알림 설정)
+// ────────────────────────────────────────────
+
+model Subscription {
+  id              String @id @default(cuid())
+  userId          String
+  certificationId String
+
+  // 며칠 전 알림 배열 ([] = 알림 없음)
+  notifyApplicationStartDays Int[] // 접수 시작 N일 전 ex) [3, 1]
+  notifyApplicationEndDays   Int[] // 접수 마감 N일 전 ex) [1]
+  notifyExamDays             Int[] // 시험일 N일 전   ex) [7, 1]
+  notifyResultOnDay          Boolean @default(true) // 발표 당일
+
+  channels  NotificationChannel[]
+  isActive  Boolean               @default(true)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certification    Certification @relation(fields: [certificationId], references: [id])
+  notificationLogs NotificationLog[]
+
+  @@unique([userId, certificationId])
+  @@index([userId])
+  @@index([certificationId])
+}
+
+enum NotificationChannel {
+  EMAIL
+  WEBPUSH
+  KAKAO
+}
+
+// ────────────────────────────────────────────
+// 알림 발송 로그
+// ────────────────────────────────────────────
+
+model NotificationLog {
+  id             String @id @default(cuid())
+  userId         String
+  subscriptionId String
+  sessionId      String
+
+  notificationType NotificationType
+  channel          NotificationChannel
+  scheduledAt      DateTime
+  sentAt           DateTime?
+  status           NotificationStatus @default(PENDING)
+  errorMessage     String?
+
+  createdAt DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+  session      ExamSession  @relation(fields: [sessionId], references: [id])
+
+  @@index([userId])
+  @@index([scheduledAt, status])
+  @@index([status])
+}
+
+enum NotificationType {
+  APPLICATION_START   // 접수 시작
+  APPLICATION_END     // 접수 마감
+  EXAM_DATE           // 시험일
+  RESULT_ANNOUNCEMENT // 발표일
+  SCHEDULE_CHANGE     // 일정 변경
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}

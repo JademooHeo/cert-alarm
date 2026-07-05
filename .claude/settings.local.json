@@ -1,7 +1,34 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx create-next-app@latest *)"
+      "Bash(npx create-next-app@latest *)",
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "Bash(brew services *)",
+      "Bash(brew list *)",
+      "Bash(docker info *)",
+      "Bash(brew install *)",
+      "Bash(/opt/homebrew/opt/postgresql@16/bin/pg_isready)",
+      "Bash(/opt/homebrew/opt/postgresql@16/bin/createdb cert_alarm)",
+      "Bash(npm run *)",
+      "Bash(/opt/homebrew/opt/postgresql@16/bin/psql cert_alarm *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Skill(claude-in-chrome)",
+      "Bash(curl -s http://localhost:3000/certs/seed-정보처리기사)",
+      "Bash(curl *)",
+      "Bash(node *)",
+      "Bash(/usr/bin/curl -s \"http://localhost:3000/\" -o /dev/null -w \"/ → %{http_code}\\\\n\")",
+      "Bash(/usr/bin/curl -s \"http://localhost:3000/certs\" -o /dev/null -w \"/certs → %{http_code}\\\\n\")",
+      "Bash(/usr/bin/curl -s \"http://localhost:3000/certs/seed-SQLD\" -o /dev/null -w \"/certs/seed-SQLD → %{http_code}\\\\n\")",
+      "Bash(/usr/bin/curl -s \"http://localhost:3000/certs/seed-%EC%A0%95%EB%B3%B4%EC%B2%98%EB%A6%AC%EA%B8%B0%EC%82%AC\" -o /dev/null -w \"/certs/정보처리기사 → %{http_code}\\\\n\")",
+      "Bash(/usr/bin/curl -s \"http://localhost:3000/certs?q=%EC%A0%84%EA%B8%B0\" -o /dev/null -w \"/certs?q=전기 → %{http_code}\\\\n\")",
+      "Bash(openssl rand *)",
+      "Bash(npx tsc *)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(psql *)",
+      "Bash(gh auth *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
     ]
   }
 }
